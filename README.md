@@ -26,8 +26,3 @@
 - npm
 
 ---
-
-## Live Demo
-
-- Frontend: [https://stocknest-frontend.vercel.app](#)
-- API: [https://stocknest-api.onrender.com](#)
