@@ -9,4 +9,4 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:9.0-preview AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "api.dll"]  # replace with your actual DLL name
+ENTRYPOINT ["dotnet", "api.dll"]  
