@@ -6,17 +6,15 @@ using api.Repository;
 using api.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.CodeAnalysis.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Controllers & Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 builder.Services.AddSwaggerGen(option =>
 {
     option.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
@@ -36,25 +34,40 @@ builder.Services.AddSwaggerGen(option =>
             {
                 Reference = new OpenApiReference
                 {
-                    Type=ReferenceType.SecurityScheme,
-                    Id="Bearer"
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
                 }
             },
-            new string[]{}
+            new string[] {}
         }
     });
 });
 
+// JSON serialization settings
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
 {
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
 });
 
+// CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
+    {
+        policy.AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials()
+              .WithOrigins("https://stock-nest-39nldxuyx-ansh-goyanis-projects.vercel.app");
+    });
+});
+
+// Database
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+// Identity
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
@@ -65,6 +78,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDBContext>();
 
+// Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme =
@@ -73,7 +87,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultScheme =
     options.DefaultSignInScheme =
     options.DefaultSignOutScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
+})
+.AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -83,11 +98,12 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["JWT:Audience"],
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(
-            System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"])
+            Encoding.UTF8.GetBytes(builder.Configuration["JWT:SigningKey"])
         )
     };
 });
 
+// Dependency injection
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -95,23 +111,19 @@ builder.Services.AddScoped<IPortfolioRepository, PortfolioRepository>();
 builder.Services.AddScoped<IFMPService, FMPService>();
 builder.Services.AddHttpClient<IFMPService, FMPService>();
 
-
 var app = builder.Build();
 
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// HTTPS & Middleware
 app.UseHttpsRedirection();
 
-app.UseCors(x => x
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .AllowCredentials()
-    //.WithOrigins("https://localhost:44351")
-    .SetIsOriginAllowed(origin => true));
+app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -119,4 +131,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
