@@ -1,0 +1,11 @@
+# Backend
+bin/
+obj/
+.vscode/
+*.user
+*.suo
+
+# Frontend
+node_modules/
+dist/
+.env
